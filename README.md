@@ -34,7 +34,9 @@
 
 此工具可以将选择的文件夹中的文件夹遍历，提取（选择的文件夹）中的（ucs文件夹）中的 （config文件夹）中的bigip.conf和 bigip_base.conf 到一级文件夹中，并分开存放。
 
-此工具对于同时处理多个翻译时，非常有用。如果你只需要翻译一个ucs，可以仅仅使用 3-conf翻译为txt和excel 和 4-base翻译为txt和excel 。
+此工具对于同时处理多个翻译时，非常有用。
+
+`如果你只需要翻译一个ucs，可以仅仅使用 3-conf翻译为txt和excel 和 4-base翻译为txt和excel 。`
 
 例如，你选择了test目录，则可以生成如下内容。
 

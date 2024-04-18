@@ -24,13 +24,13 @@
 └── ucs2.zip
 ```
 
-## 1-UCS后缀改为ZIP
+## UCS后缀改为ZIP
 
 此工具可以将你选择的文件夹中的所有ucs文件后缀改为zip。
 
 这对mac是很有用的，对于windows，你可能需要手动解压。
 
-## 2-提取conf和base
+## 提取conf和base
 
 此工具可以将选择的文件夹中的文件夹遍历，提取（选择的文件夹）中的（ucs文件夹）中的 （config文件夹）中的bigip.conf和 bigip_base.conf 到一级文件夹中，并分开存放。
 
@@ -54,7 +54,7 @@
 └── ucs2.zip
 ```
 
-## 3-conf翻译为txt和excel
+## conf翻译为txt和excel
 
 此工具可以将选择的文件夹中的所有 conf 文件翻译为 弘积的配置文件、配置汇总表和注意事项
 
@@ -76,7 +76,7 @@
 │   └── ucs2_bigip_attention.txt
 ```
 
-## 4-base翻译为txt和excel
+## base翻译为txt和excel
 
 此工具可以将选择的文件夹中的所有 conf 文件翻译为 弘积的配置文件、配置汇总表和注意事项
 

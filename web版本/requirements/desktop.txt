@@ -1,3 +1,0 @@
--r base.txt
-tkinter
-pillow==10.2.0 

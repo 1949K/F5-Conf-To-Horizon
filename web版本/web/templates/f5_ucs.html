@@ -1,0 +1,1039 @@
+{% extends "base.html" %}
+
+{% block title %}F5 UCS 配置翻译{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-dots {
+        display: flex;
+        gap: 6px;
+        margin-left: auto;
+    }
+
+    .dot {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        display: inline-block;
+        border: 2px solid #ddd;
+    }
+
+    .ucs-dot {
+        background-color: transparent;
+        /* 透明背景 - 默认状态 */
+        border-color: #000;
+        /* 黑色边框 */
+    }
+
+    .tar-dot {
+        background-color: transparent;
+        /* 透明背景 - 默认状态 */
+        border-color: #000;
+        /* 黑色边框 */
+    }
+
+    .ucs-dot.active {
+        background-color: #0d6efd;
+        /* 深蓝色 - UCS文件存在 */
+        border-color: #0d6efd;
+    }
+
+    .tar-dot.active {
+        background-color: #0dcaf0;
+        /* 浅蓝色 - TAR文件存在 */
+        border-color: #0dcaf0;
+    }
+
+    .conf-dot {
+        background-color: transparent;
+        /* 透明背景 - 默认状态 */
+        border-color: #000;
+        /* 黑色边框 */
+    }
+
+    .base-dot {
+        background-color: transparent;
+        /* 透明背景 - 默认状态 */
+        border-color: #000;
+        /* 黑色边框 */
+    }
+
+    .conf-dot.active {
+        background-color: #198754;
+        /* 深绿色 - conf文件存在 */
+        border-color: #198754;
+    }
+
+    .base-dot.active {
+        background-color: #20c997;
+        /* 浅绿色 - base文件存在 */
+        border-color: #20c997;
+    }
+
+    .excel-dot {
+        background-color: transparent;
+        /* 透明背景 - 默认状态 */
+        border-color: #000;
+        /* 黑色边框 */
+    }
+
+    .txt-dot {
+        background-color: transparent;
+        /* 透明背景 - 默认状态 */
+        border-color: #000;
+        /* 黑色边框 */
+    }
+
+    .excel-dot.active {
+        background-color: #6f42c1;
+        /* 深紫色 - Excel文件存在 */
+        border-color: #6f42c1;
+    }
+
+    .txt-dot.active {
+        background-color: #d63384;
+        /* 浅紫色 - TXT文件存在 */
+        border-color: #d63384;
+    }
+
+    .attention-dot {
+        background-color: transparent;
+        /* 透明背景 - 默认状态 */
+        border-color: #000;
+        /* 黑色边框 */
+    }
+
+    .attention-dot.active {
+        background-color: #fd7e14;
+        /* 橙色 - Attention文件存在 */
+        border-color: #fd7e14;
+    }
+
+    .gray-dot {
+        background-color: transparent;
+        /* 透明背景 - 文件不存在 */
+        border-color: #000;
+        /* 黑色边框 */
+    }
+
+    /* 表格优化样式 */
+    .status-matrix-table {
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    .status-matrix-table th {
+        font-weight: 600;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .status-matrix-table td {
+        vertical-align: middle;
+        padding: 0.75rem 0.5rem;
+    }
+
+    /* 表格行交替颜色 */
+    .status-matrix-table tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    .status-matrix-table tbody tr:nth-child(odd) {
+        background-color: #ffffff;
+    }
+
+    .status-matrix-table tbody tr:hover {
+        background-color: #e9ecef;
+        transition: background-color 0.2s ease;
+    }
+
+    /* 下载行的悬停效果 */
+    .status-matrix-table tbody tr td[onclick]:hover {
+        background-color: #e9ecef !important;
+        color: #0d6efd !important;
+        font-weight: bold;
+        transition: all 0.2s ease;
+    }
+
+
+
+    .dot {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .dot:hover {
+        transform: scale(1.2);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .file-item {
+        padding: 10px;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        margin-bottom: 8px;
+        background-color: #f8f9fa;
+    }
+
+    .file-item:hover {
+        background-color: #e9ecef;
+    }
+
+    .extracted-dirs-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .extracted-dir-item {
+        padding: 8px 12px;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        margin-bottom: 6px;
+        background-color: #f8f9fa;
+        transition: background-color 0.2s;
+    }
+
+    .extracted-dir-item:hover {
+        background-color: #e9ecef;
+    }
+
+    .extracted-dir-item .dir-name {
+        font-weight: 500;
+        color: #495057;
+    }
+
+    .extracted-dir-item .file-count {
+        font-size: 0.85em;
+        color: #6c757d;
+    }
+
+    .extracted-dir-item .config-files {
+        margin-top: 4px;
+        font-size: 0.8em;
+        color: #6c757d;
+    }
+
+    .extracted-configs-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .extracted-config-item {
+        padding: 8px 12px;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        margin-bottom: 6px;
+        background-color: #f8f9fa;
+        transition: background-color 0.2s;
+    }
+
+    .extracted-config-item:hover {
+        background-color: #e9ecef;
+    }
+
+    .extracted-config-item .config-name {
+        font-weight: 500;
+        color: #495057;
+    }
+
+    .extracted-config-item .file-list {
+        margin-top: 4px;
+        font-size: 0.8em;
+        color: #6c757d;
+    }
+
+    .extracted-config-item .file-count {
+        font-size: 0.75em;
+        color: #6c757d;
+    }
+
+    /* 下载按钮圆角样式 */
+    .download-btn {
+        border-radius: 20px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .download-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card" style="height: 400px; overflow-y: auto;">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-cogs me-2"></i>F5 UCS 配置翻译
+                </h4>
+            </div>
+            <div class="card-body" style="height: calc(320px - 60px);">
+                <div class="file-upload-area" id="uploadArea"
+                    style="padding: 60px;height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+
+                    <i class="fas fa-cloud-upload-alt fa-2x text-primary mb-2"></i>
+                    <h6>拖拽文件到此处或点击选择文件/文件夹</h6>
+                    <p class="text-muted small mb-2">支持文件格式：ucs、tar、conf</p>
+                    <p class="text-muted small mb-2">文件数量限制：最多12个文件</p>
+                    <div class="row">
+                        <div class="col-12">
+                            <input type="file" id="fileInput" multiple webkitdirectory directory style="display: none;">
+                            <button class="btn btn-primary btn-sm download-btn btn-full"
+                                onclick="document.getElementById('fileInput').click()">
+                                <i class="fas fa-file me-2"></i>点击上传文件或文件夹
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="row mb-3 justify-content-center">
+                    <div class="col-3">
+                        <button class="btn btn-primary download-btn btn-full" onclick="autoProcessFiles()">
+                            <i class="fas fa-cogs me-2"></i>自动化处理
+                        </button>
+                    </div>
+                    <div class="col-3">
+                        <button class="btn btn-warning download-btn btn-full" onclick="reExecuteTranslationProcess()">
+                            <i class="fas fa-redo me-2"></i>重新执行翻译
+                        </button>
+                    </div>
+                    <div class="col-3">
+                        <button class="btn btn-danger download-btn btn-full" onclick="deleteAllFiles()">
+                            <i class="fas fa-trash me-2"></i>删除全部文件
+                        </button>
+                    </div>
+                    <div class="col-3">
+                        <button class="btn btn-success download-btn btn-full" onclick="downloadAllFilesComplete()">
+                            <i class="fas fa-download me-2"></i>下载全部文件
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="col-lg-4">
+
+
+        <!-- 状态和日志 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-terminal me-2"></i>处理日志
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="logArea" class="log-area">
+                    <div class="text-muted">等待操作...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 状态矩阵表格 -->
+    <div class="mt-4" id="statusMatrixSection">
+
+        <div class="card">
+
+
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>整体流程</h5>
+            </div>
+
+                <div class="card-body p-0">
+                    <div id="statusMatrixTable" class="table-responsive" style="max-height: none; overflow: visible;"></div>
+                </div>
+
+            </div>
+
+            
+
+        </div>
+
+    </div>
+
+
+
+
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const logArea = document.getElementById('logArea');
+        const statusMatrixSection = document.getElementById('statusMatrixSection');
+        const statusMatrixTable = document.getElementById('statusMatrixTable');
+
+        // 清空日志
+        function clearLog() {
+            logArea.innerHTML = '<div class="text-muted">等待操作...</div>';
+        }
+
+        // 拖拽上传处理
+        uploadArea.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', function (e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', function (e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = Array.from(e.dataTransfer.files);
+
+            // 过滤隐藏文件并移除路径前缀
+            const visibleFiles = files.filter(file => {
+                const fileName = file.name;
+                // 忽略以点开头的隐藏文件
+                if (fileName.startsWith('.')) {
+                    addLog(`忽略隐藏文件: ${fileName}`, 'info');
+                    return false;
+                }
+                return true;
+            }).map(file => {
+                // 移除路径前缀，只保留文件名
+                const originalName = file.name;
+                const fileName = originalName.split('/').pop(); // 获取最后一个部分作为文件名
+
+                // 创建新的File对象，只包含文件名
+                const newFile = new File([file], fileName, {
+                    type: file.type,
+                    lastModified: file.lastModified
+                });
+
+                addLog(`处理文件: ${originalName} -> ${fileName}`, 'info');
+                return newFile;
+            });
+
+            addLog(`拖拽文件总数: ${files.length}，可见文件: ${visibleFiles.length}`, 'info');
+
+            // 检查文件数量限制
+            if (visibleFiles.length > 12) {
+                addLog(`文件数量超过限制，最多只能拖拽12个文件，当前拖拽了 ${visibleFiles.length} 个文件`, 'error');
+                return;
+            }
+
+            // 分类文件
+            const ucsFiles = [];
+            const tarFiles = [];
+            const confFiles = [];
+
+            visibleFiles.forEach(file => {
+                const ext = file.name.toLowerCase().split('.').pop();
+                const fileName = file.name.toLowerCase();
+
+                if (ext === 'ucs') {
+                    ucsFiles.push(file);
+                } else if (ext === 'tar') {
+                    tarFiles.push(file);
+                } else if (ext === 'conf' && (fileName.includes('bigip.conf') || fileName.includes('bigip_base.conf'))) {
+                    confFiles.push(file);
+                } else {
+                    addLog(`不支持的文件类型: ${file.name}，请上传UCS、TAR或CONF文件`, 'error');
+                }
+            });
+
+            // 记录分类结果
+            addLog(`分类结果：UCS文件 ${ucsFiles.length} 个，TAR文件 ${tarFiles.length} 个，配置文件 ${confFiles.length} 个`, 'info');
+
+            if (ucsFiles.length > 0 || tarFiles.length > 0 || confFiles.length > 0) {
+                clearLog(); // 清空之前的日志
+
+                // 上传UCS和TAR文件
+                const uploadPromises = [...ucsFiles, ...tarFiles].map(uploadFile);
+
+                // 处理配置文件
+                if (confFiles.length > 0) {
+                    addLog(`开始处理 ${confFiles.length} 个配置文件...`, 'info');
+                    confFiles.forEach(uploadConfFile);
+                }
+
+                // 等待所有文件上传完成后刷新状态矩阵
+                Promise.all(uploadPromises).then(() => {
+                    setTimeout(() => {
+                        loadStatusMatrix();
+                        addLog('所有文件上传完成，状态矩阵已更新', 'success');
+                    }, 1000);
+                }).catch(error => {
+                    addLog(`文件上传过程中出现错误: ${error}`, 'error');
+                });
+            }
+        });
+
+        // 文件选择处理
+        fileInput.addEventListener('change', function (e) {
+            const files = Array.from(e.target.files);
+
+            // 检查文件类型
+            const validFiles = files.filter(file => {
+                const ext = file.name.toLowerCase().split('.').pop();
+                if (ext === 'ucs' || ext === 'tar' || ext === 'conf') {
+                    return true;
+                } else {
+                    addLog(`不支持的文件类型: ${file.name}，请上传UCS、TAR或CONF文件`, 'error');
+                    return false;
+                }
+            });
+
+            if (validFiles.length > 0) {
+                clearLog(); // 清空之前的日志
+                validFiles.forEach(uploadFile);
+            }
+            fileInput.value = ''; // 清空选择，允许重复选择相同文件
+        });
+
+        // 上传文件处理
+        function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // 获取不带后缀的文件名
+            const baseName = file.name.replace(/\.(ucs|tar)$/i, '');
+
+            // 发送上传请求
+            return fetch('/upload/ucs', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog(`文件 ${file.name} 上传成功`, 'success');
+
+                        // 文件上传后自动开始处理
+                        setTimeout(() => autoProcessFiles(), 500);
+
+                        return data;
+                    } else {
+                        addLog(`文件 ${file.name} 上传失败: ${data.error}`, 'error');
+                        throw new Error(data.error);
+                    }
+                })
+                .catch(error => {
+                    addLog(`文件 ${file.name} 上传失败: ${error}`, 'error');
+                    throw error;
+                });
+        }
+
+        // 上传配置文件处理
+        function uploadConfFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('file_type', 'conf');
+
+            // 发送上传请求
+            fetch('/upload/conf', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog(`配置文件 ${file.name} 上传成功`, 'success');
+                        // 刷新状态矩阵
+                        loadStatusMatrix();
+                    } else {
+                        addLog(`配置文件 ${file.name} 上传失败: ${data.error}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    addLog(`配置文件 ${file.name} 上传失败: ${error}`, 'error');
+                });
+        }
+
+        // 上传其他文件到processed文件夹
+        function uploadOtherFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('file_type', 'processed');
+
+            // 发送上传请求
+            fetch('/upload/processed', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog(`文件 ${file.name} 已放入processed文件夹`, 'success');
+                    } else {
+                        addLog(`文件 ${file.name} 处理失败: ${data.error}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    addLog(`文件 ${file.name} 处理失败: ${error}`, 'error');
+                });
+        }
+
+        // 添加日志
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logItem = document.createElement('div');
+            logItem.className = `log-item text-${type}`;
+            logItem.innerHTML = `
+                <small class="text-muted">[${timestamp}]</small>
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} me-1"></i>
+                ${message}
+            `;
+
+            // 如果是第一条日志，只清除初始的"等待操作..."提示
+            const initialMessage = logArea.querySelector('.text-muted:not(.log-item small)');
+            if (initialMessage && initialMessage.textContent.includes('等待操作')) {
+                logArea.innerHTML = '';
+            }
+
+            logArea.appendChild(logItem);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        // 加载当前页面日志（显示页面自动刷新的日志）
+        window.loadServerLogs = function () {
+            // 获取当前日志区域的所有日志项
+            const logItems = logArea.querySelectorAll('.log-item');
+
+            if (logItems.length === 0) {
+                logArea.innerHTML = '<div class="text-muted">暂无操作日志</div>';
+                return;
+            }
+
+            // 显示日志统计信息
+            const logCount = logItems.length;
+            const successCount = logArea.querySelectorAll('.log-item.text-success').length;
+            const errorCount = logArea.querySelectorAll('.log-item.text-error').length;
+            const infoCount = logArea.querySelectorAll('.log-item.text-info').length;
+
+            // 添加日志统计提示
+            const statsIndicator = document.createElement('div');
+            statsIndicator.className = 'text-center text-muted mb-2 p-2 bg-light rounded';
+            statsIndicator.innerHTML = `
+                <i class="fas fa-chart-bar me-2"></i>
+                日志统计：总计 ${logCount} 条，成功 ${successCount} 条，错误 ${errorCount} 条，信息 ${infoCount} 条
+            `;
+            logArea.appendChild(statsIndicator);
+
+            // 滚动到底部显示最新日志
+            logArea.scrollTop = logArea.scrollHeight;
+
+            // 5秒后移除统计提示
+            setTimeout(() => {
+                if (statsIndicator.parentNode) {
+                    statsIndicator.remove();
+                }
+            }, 5000);
+        };
+
+        // 自动化处理文件
+        window.autoProcessFiles = function () {
+            addLog('开始自动化处理流程...', 'info');
+
+            const formData = new FormData();
+            formData.append('file_type', 'ucs');
+
+            fetch('/process/auto_process', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog('自动化处理流程完成', 'success');
+                        if (data.results) {
+                            data.results.forEach(result => {
+                                addLog(result, 'info');
+                            });
+                        }
+                        setTimeout(() => loadStatusMatrix(), 1000);
+                    } else {
+                        addLog(`自动化处理失败: ${data.error}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    addLog(`自动化处理失败: ${error}`, 'error');
+                });
+        };
+
+
+
+
+
+        // 加载全流程状态矩阵
+        function loadStatusMatrix() {
+            fetch('/ucs_status_matrix')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('状态矩阵数据:', data.matrix);
+                        renderStatusMatrix(data.matrix);
+                    } else {
+                        console.error('加载状态矩阵失败:', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('加载状态矩阵出错:', error);
+                });
+        }
+        function renderStatusMatrix(matrix) {
+            const tableDiv = document.getElementById('statusMatrixTable');
+            console.log('渲染状态矩阵，文件数量:', Object.keys(matrix).length);
+
+            let html = '<table class="table table-bordered table-sm align-middle mb-0 status-matrix-table" style="border: 2px solid #dee2e6;"><thead>' +
+                '<tr class="table-light">' +
+                '<th class="text-center align-middle bg-light" style="min-width: 200px;">文件处理流程</th>' +
+                '<th colspan="2" class="text-center bg-light align-middle">导入文件</th>' +
+                '<th class="text-center bg-light align-middle">解压</th>' +
+                '<th colspan="2" class="text-center bg-light align-middle">文件整合</th>' +
+                '<th colspan="2" class="text-center bg-light align-middle">base翻译</th>' +
+                '<th colspan="3" class="text-center bg-light align-middle">conf翻译</th>' +
+                '</tr>' +
+                '<tr class="table-light">' +
+                '<th class="text-center fw-bold bg-light">文件名</th>' +
+                '<th class="text-center bg-light">UCS</th>' +
+                '<th class="text-center bg-light">TAR</th>' +
+                '<th class="text-center bg-light">已解压</th>' +
+                '<th class="text-center bg-light">conf</th>' +
+                '<th class="text-center bg-light">base</th>' +
+                '<th class="text-center bg-light">Excel</th>' +
+                '<th class="text-center bg-light">HJ</th>' +
+                '<th class="text-center bg-light">Excel</th>' +
+                '<th class="text-center bg-light">HJ</th>' +
+                '<th class="text-center bg-light">ATTN</th>' +
+                '</tr></thead><tbody>';
+            const keys = Object.keys(matrix).sort();
+            console.log('排序后的文件名:', keys);
+
+            if (keys.length === 0) {
+                html += '<tr><td colspan="11" class="text-muted text-center py-4"><i class="fas fa-inbox me-2"></i>暂无文件</td></tr>';
+            } else {
+                keys.forEach((base, index) => {
+                    const row = matrix[base];
+                    const rowClass = index % 2 === 0 ? 'table-light' : '';
+                    html += `<tr class="${rowClass}">` +
+                        `<td class="fw-bold text-dark bg-light">${base}</td>` +
+                        `<td class="text-center align-middle"><span class="dot ucs-dot${row.ucs ? ' active' : ''}" title="${row.ucs ? 'UCS文件已上传' : 'UCS文件未上传'}"></span></td>` +
+                        `<td class="text-center align-middle"><span class="dot tar-dot${row.tar ? ' active' : ''}" title="${row.tar ? 'TAR文件已上传' : 'TAR文件未上传'}"></span></td>` +
+                        `<td class="text-center align-middle"><span class="dot extracted-dot${row.extracted ? ' active' : ''}" style="background:${row.extracted ? '#ffc107' : 'transparent'};border-color:${row.extracted ? '#ffc107' : '#000'};" title="${row.extracted ? '文件已解压' : '文件未解压'}"></span></td>` +
+                        `<td class="text-center align-middle"><span class="dot conf-dot${row.conf ? ' active' : ''}" title="${row.conf ? 'conf文件已提取' : 'conf文件未提取'}"></span></td>` +
+                        `<td class="text-center align-middle"><span class="dot base-dot${row.base ? ' active' : ''}" title="${row.base ? 'base文件已提取' : 'base文件未提取'}"></span></td>` +
+                        `<td class="text-center align-middle"><span class="dot excel-dot${row.excel_base ? ' active' : ''}" title="${row.excel_base ? 'base Excel文件已生成' : 'base Excel文件未生成'}"></span></td>` +
+                        `<td class="text-center align-middle"><span class="dot txt-dot${row.txt_base ? ' active' : ''}" title="${row.txt_base ? 'base HJ文件已生成' : 'base HJ文件未生成'}"></span></td>` +
+                        `<td class="text-center align-middle"><span class="dot excel-dot${row.excel_conf ? ' active' : ''}" title="${row.excel_conf ? 'conf Excel文件已生成' : 'conf Excel文件未生成'}"></span></td>` +
+                        `<td class="text-center align-middle"><span class="dot txt-dot${row.txt_conf ? ' active' : ''}" title="${row.txt_conf ? 'conf HJ文件已生成' : 'conf HJ文件未生成'}"></span></td>` +
+                        `<td class="text-center align-middle"><span class="dot attention-dot${row.attention_conf ? ' active' : ''}" title="${row.attention_conf ? 'conf ATTN文件已生成' : 'conf ATTN文件未生成'}"></span></td>` +
+                        '</tr>';
+                });
+
+                // 添加全部下载行
+                const hasAnyFilesOverall = keys.some(base => {
+                    const row = matrix[base];
+                    return row.ucs || row.tar || row.extracted || row.conf || row.base ||
+                        row.excel_conf || row.txt_conf || row.attention_conf || row.excel_base || row.txt_base;
+                });
+
+                if (hasAnyFilesOverall) {
+                    html += '<tr class="table-light">' +
+                        '<td class="fw-bold text-dark text-center">下载</td>' +
+                        '<td colspan="2" class="text-center align-middle fw-bold" style="cursor: pointer;" onclick="downloadByGroup(\'import\')" title="点击下载所有导入文件（UCS和TAR）">导入文件</td>' +
+                        '<td class="text-center align-middle fw-bold" style="cursor: pointer;" onclick="downloadByGroup(\'extracted\')" title="点击下载所有已解压文件">解压</td>' +
+                        '<td colspan="2" class="text-center align-middle fw-bold" style="cursor: pointer;" onclick="downloadByGroup(\'config\')" title="点击下载所有文件整合（conf和base）">文件整合</td>' +
+                        '<td colspan="2" class="text-center align-middle fw-bold" style="cursor: pointer;" onclick="downloadByGroup(\'output_base\')" title="点击下载所有base翻译文件（Excel和TXT）">base翻译</td>' +
+                        '<td colspan="3" class="text-center align-middle fw-bold" style="cursor: pointer;" onclick="downloadByGroup(\'output_conf\')" title="点击下载所有conf翻译文件（Excel、HJ和ATTN）">conf翻译</td>' +
+                        '</tr>';
+                }
+            }
+            html += '</tbody></table>';
+            tableDiv.innerHTML = html;
+            console.log('状态矩阵渲染完成，表格HTML长度:', html.length);
+            console.log('实际显示的文件行数:', keys.length);
+        }
+
+        // 检查并显示调试模式状态
+        function checkDebugMode() {
+            const isDebugMode = new URLSearchParams(window.location.search).get('debug') === 'true' ||
+                window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1';
+
+            if (isDebugMode) {
+                // 在页面顶部添加调试模式指示器
+                const debugIndicator = document.createElement('div');
+                debugIndicator.className = 'alert alert-info alert-dismissible fade show';
+                debugIndicator.innerHTML = `
+                    <i class="fas fa-bug me-2"></i>
+                    <strong>调试模式</strong> - 显示详细路径信息
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.querySelector('.card-body').insertBefore(debugIndicator, document.querySelector('.card-body').firstChild);
+            }
+        }
+
+        // 下载所有相关文件
+        window.downloadAllFiles = function (baseName) {
+            addLog(`开始下载 ${baseName} 的所有相关文件...`);
+
+            // 创建一个隐藏的下载链接
+            const downloadLink = document.createElement('a');
+            downloadLink.href = `/download_directory/ucs/${encodeURIComponent(baseName)}`;
+            downloadLink.download = `${baseName}_all_files.tar`;
+            downloadLink.style.display = 'none';
+
+            // 添加到页面并触发下载
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+
+            // 清理
+            document.body.removeChild(downloadLink);
+
+            addLog(`${baseName} 文件下载已开始`, 'success');
+        };
+
+        // 下载全部文件
+        window.downloadAllFilesComplete = function () {
+            addLog('开始下载所有文件...');
+
+            fetch('/download_all_files/ucs')
+                .then(response => {
+                    if (response.status === 404) {
+                        addLog('没有找到任何文件，请先上传文件', 'error');
+                        throw new Error('没有文件');
+                    }
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        return response.json().then(data => {
+                            if (data.error) {
+                                addLog('没有找到任何文件，请先上传文件', 'error');
+                                throw new Error(data.error);
+                            }
+                            throw new Error('未知错误');
+                        });
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const downloadLink = document.createElement('a');
+                    const url = window.URL.createObjectURL(blob);
+                    downloadLink.href = url;
+                    downloadLink.download = 'all_files.tar';
+                    downloadLink.style.display = 'none';
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                    window.URL.revokeObjectURL(url);
+                    addLog('所有文件下载已开始', 'success');
+                })
+                .catch(err => {
+                    // 已在上面 addLog 过，无需重复
+                });
+        };
+
+        // 按类型下载文件
+        window.downloadByType = function (contentType) {
+            const typeNames = {
+                'ucs': 'UCS文件',
+                'tar': 'TAR文件',
+                'extracted': '已解压文件',
+                'conf': 'conf文件',
+                'base': 'base文件',
+                'excel': 'Excel文件',
+                'txt': 'TXT文件'
+            };
+
+            addLog(`开始下载所有${typeNames[contentType]}...`);
+
+            // 创建一个隐藏的下载链接
+            const downloadLink = document.createElement('a');
+            downloadLink.href = `/download_by_type/ucs/${contentType}`;
+            downloadLink.download = `${contentType}_files.tar`;
+            downloadLink.style.display = 'none';
+
+            // 添加到页面并触发下载
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+
+            // 清理
+            document.body.removeChild(downloadLink);
+
+            addLog(`${typeNames[contentType]}下载已开始`, 'success');
+        };
+
+        // 按组下载文件
+        window.downloadByGroup = function (groupType) {
+            const groupNames = {
+                'import': '导入文件（UCS和TAR）',
+                'extracted': '已解压文件',
+                'config': '文件整合（conf和base）',
+                'output_base': 'base翻译文件（Excel和TXT）',
+                'output_conf': 'conf翻译文件（Excel和TXT）'
+            };
+
+            addLog(`开始下载所有${groupNames[groupType]}...`);
+
+            // 创建一个隐藏的下载链接
+            const downloadLink = document.createElement('a');
+            downloadLink.href = `/download_by_group/ucs/${groupType}`;
+            downloadLink.download = `${groupType}_files.tar`;
+            downloadLink.style.display = 'none';
+
+            // 添加到页面并触发下载
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+
+            // 清理
+            document.body.removeChild(downloadLink);
+
+            addLog(`${groupNames[groupType]}下载已开始`, 'success');
+        };
+
+        // 重新执行翻译流程
+        window.reExecuteTranslationProcess = function () {
+            addLog('开始重新执行翻译流程...', 'info');
+
+            const formData = new FormData();
+            formData.append('file_type', 'ucs');
+
+            fetch('/process/reprocess', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog('重新执行翻译流程完成', 'success');
+                        if (data.results) {
+                            data.results.forEach(result => {
+                                addLog(result, 'info');
+                            });
+                        }
+                        setTimeout(() => loadStatusMatrix(), 1000);
+                    } else {
+                        addLog(`重新执行翻译流程失败: ${data.error}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    addLog(`重新执行翻译流程失败: ${error}`, 'error');
+                });
+        };
+
+
+
+        // 下载翻译结果
+        window.downloadTranslationResults = function (type = 'excel') {
+            const typeNames = {
+                'excel': 'Excel翻译结果',
+                'txt': 'TXT翻译结果',
+                'all': '所有翻译结果'
+            };
+
+            addLog(`开始下载${typeNames[type]}...`);
+
+            // 先用 fetch 检查是否有文件
+            fetch(`/download_translation_results/ucs/${type}`)
+                .then(response => {
+                    if (response.status === 404) {
+                        addLog(`没有找到任何文件，请先上传文件`, 'error');
+                        throw new Error('没有文件');
+                    }
+                    // 检查是否是 json 错误
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        return response.json().then(data => {
+                            if (data.error) {
+                                addLog(`[${new Date().toLocaleTimeString()}]  没有找到任何文件，请先上传文件`, 'error');
+                                throw new Error(data.error);
+                            }
+                            throw new Error('未知错误');
+                        });
+                    }
+                    // 否则是文件流，正常下载
+                    return response.blob();
+                })
+                .then(blob => {
+                    // 创建下载链接
+                    const downloadLink = document.createElement('a');
+                    const url = window.URL.createObjectURL(blob);
+                    downloadLink.href = url;
+                    downloadLink.download = `translation_results_${type}.tar`;
+                    downloadLink.style.display = 'none';
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                    window.URL.revokeObjectURL(url);
+                    addLog(`${typeNames[type]}下载已开始`, 'success');
+                })
+                .catch(err => {
+                    // 已在上面 addLog 过，无需重复
+                });
+        };
+
+        // 删除全部文件
+        window.deleteAllFiles = function () {
+            if (!confirm('确定要删除所有相关文件吗？此操作不可恢复！')) {
+                return;
+            }
+
+            addLog('开始删除所有相关文件...');
+
+            fetch('/delete_all_files/ucs', {
+                method: 'POST'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog('所有文件已成功从服务器删除', 'success');
+                        // 刷新状态矩阵
+                        setTimeout(() => loadStatusMatrix(), 500);
+                    } else {
+                        addLog(`删除失败: ${data.error}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    addLog(`删除失败: ${error}`, 'error');
+                });
+        };
+
+        // 页面加载时获取全流程状态
+        loadStatusMatrix();
+        checkDebugMode();
+
+        // 页面加载时自动加载最近5行日志
+        setTimeout(() => {
+            loadServerLogs();
+        }, 1000);
+
+        const logLinesSelect = document.getElementById('logLinesSelect');
+        const clearLogBtn = document.getElementById('clearLogBtn');
+
+        // 自动刷新日志
+        // setInterval(() => {
+        //     if (document.body.contains(logArea)) {
+        //         loadServerLogs();
+        //     }
+        // }, 2000);
+
+        // 清空日志按钮功能
+        document.getElementById('clearLogBtn').addEventListener('click', function () {
+            if (confirm('确定要清空当前页面的所有日志吗？此操作不可恢复！')) {
+                // 清空当前页面的日志
+                logArea.innerHTML = '<div class="text-muted">等待操作...</div>';
+                addLog('页面日志已清空', 'success');
+            }
+        });
+
+        // 清空服务器日志文件
+        fetch('/clear_logs', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => { /* 处理服务器响应 */ });
+    });
+</script>
+{% endblock %}

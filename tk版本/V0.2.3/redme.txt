@@ -1,0 +1,57 @@
+v0.1.1
+2024年2月26日
+    修正 Package3 的 Conf_Extract.py 155行 健康检查名称中有"."时，显示错误的问题。
+    修正 Package3 的 Conf_WriteToTxt.py 158行 健康检查Get请求提取错误问题。
+    增加 Package3 的 Conf_WriteToTxt.py 122行和147行 提取http健康检查和https一致的处理。
+    修复 Package3 的 Conf_Extract.py 132行 提取pool健康检查名称会提取到node的健康检查。
+    新增 Package3 的 Conf_Extract.py 对pool member的健康检查和比率提取输出
+    dns健康检查
+
+v0.2.0
+2024年4月24日-更改base翻译内容
+    修复335行，vlan和vlan号之间没有空格的问题。
+    修复339行，vlan名称写成trunk名称的错误
+    更改126行，allow_service提取规则。
+    增加342行，添加了self IP的提取。
+
+2024年4月24日-更改package3的write2txt文件
+    修复215行，F5使用特殊的健康检查类型进行提示。
+    修复440行，vs使用cookie会话保持后，将vs类型转换为http
+
+2024年4月24日-更改package4的write2txt文件
+    修复vlan提取到没有聚合，直接显示为interface
+    修复导出的默认路由0.0.0.0为0.0.0.0/0
+
+2025年4月14日-更改package4的write2txt文件
+    遇到GET后面有两个空格会提取不到信息。send "GET  /iamgate/F5check.html \r\n\r\n"
+    vs中关联erule，在txt中生成。完成
+    vs的limit限制，在txt和excel中生成。完成
+
+
+
+
+已知错误：
+    导出tcp模版出错，会导出关于证书配置的内容。
+
+    vs中关联了http插入头的profile，在txt中生成。
+    生成的浮动地址不需要带掩码。
+    vs禁用了，相同的翻译
+
+    pool的优先级和比率出错ratio和priority
+        load-balancing-mode ratio-member没有翻译
+
+    dns monitor间隔1时，出错
+    默认535频率
+
+    pool 中的pool member禁用情况
+    健康检查success错误
+    pool类型为udp还是导出为tcp
+
+    https健康检查中，用户名和密码部分的翻译
+
+    F5的pool和member同时关联健康检查，此时F5优先使用member的健康检查状态。与pool的健康检查无关，但是弘积只能挂在pool或者node上，两者是and的关系。
+
+
+
+
+

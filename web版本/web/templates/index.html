@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}主页 - 配置翻译工具{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 统一按钮样式 */
+    .btn {
+        border-radius: 20px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <!-- 用户状态栏 -->
+        <div class="card mb-3">
+            <div class="card-body">
+                {% if user %}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-user me-2"></i>
+                            <strong>欢迎，{{ user }}！</strong>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm btn-auto">
+                                <i class="fas fa-sign-out-alt me-1"></i>登出
+                            </a>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-user-slash me-2"></i>
+                            <span class="text-muted">未登录</span>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('login') }}" class="btn btn-primary btn-sm me-2 btn-auto">
+                                <i class="fas fa-sign-in-alt me-1"></i>登录
+                            </a>
+                            <a href="{{ url_for('register') }}" class="btn btn-outline-primary btn-sm btn-auto">
+                                <i class="fas fa-user-plus me-1"></i>注册
+                            </a>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header text-center">
+                <h2 class="mb-0">
+                    <i class="fas fa-cogs me-2"></i>配置翻译工具
+                </h2>
+            </div>
+            <div class="card-body text-center">
+                {% if user %}
+                    <div class="mb-4">
+                        <h4 class="text-primary">欢迎使用配置翻译工具</h4>
+                        <p class="text-muted">请选择一个功能模块开始您的配置翻译工作</p>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <div class="text-center mb-3">
+                                        <i class="fas fa-server fa-3x text-primary"></i>
+                                    </div>
+                                    <h5 class="card-title">F5 UCS 配置翻译</h5>
+                                    <p class="card-text">处理F5 UCS格式的配置文件，支持多种转换操作</p>
+                                    <ul class="list-unstyled text-start">
+                                        <li><i class="fas fa-check text-success me-2"></i>UCS后缀改为TAR</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>提取conf和base</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>conf翻译为txt和excel</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>base翻译为txt和excel</li>
+                                    </ul>
+                                    <a href="{{ url_for('ucs_page') }}" class="btn btn-primary btn-full">
+                                        <i class="fas fa-arrow-right me-2"></i>进入模块
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <div class="text-center mb-3">
+                                        <i class="fas fa-eye fa-3x text-success"></i>
+                                    </div>
+                                    <h5 class="card-title">F5 Show 配置翻译</h5>
+                                    <p class="card-text">处理F5 Show命令输出的配置文件</p>
+                                    <ul class="list-unstyled text-start">
+                                        <li><i class="fas fa-check text-success me-2"></i>txt后缀改为log</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>show conf翻译为txt和excel</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>show base翻译为txt和excel</li>
+                                    </ul>
+                                    <a href="{{ url_for('show_page') }}" class="btn btn-success btn-full">
+                                        <i class="fas fa-arrow-right me-2"></i>进入模块
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle me-2"></i>使用说明</h6>
+                            <ul class="mb-0 text-start">
+                                <li>支持的文件格式：UCS、TAR、TXT、CONF</li>
+                                <li>最大文件大小：100MB</li>
+                                <li>处理结果将自动下载到本地</li>
+                                <li>所有操作都有详细的日志记录</li>
+                                <li>您的文件将安全存储在个人目录中</li>
+                            </ul>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="mb-4">
+                        <h4 class="text-primary">欢迎使用配置翻译工具</h4>
+                        <p class="text-muted">请先登录以使用完整功能</p>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>需要登录</h6>
+                        <p class="mb-0">您需要登录后才能使用配置翻译功能。请点击右上角的"登录"按钮进行登录。</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

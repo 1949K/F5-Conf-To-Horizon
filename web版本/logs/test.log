@@ -1,0 +1,3 @@
+2025-08-03 19:59:13,647 - core.shared.logging_config - INFO - 日志管理器初始化完成，日志文件: logs/test.log
+2025-08-03 19:59:13,647 - HorizonProcessorEnhanced - INFO - 初始化处理器: HorizonProcessorEnhanced
+2025-08-03 19:59:13,649 - HorizonProcessorEnhanced - INFO - 初始化处理器: HorizonProcessorEnhanced

@@ -1,0 +1,1406 @@
+{% extends "base.html" %}
+
+{% block title %}弘积主备配置对比{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-dots {
+        display: flex;
+        gap: 6px;
+        margin-left: auto;
+    }
+
+    .dot {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        display: inline-block;
+        border: 2px solid #ddd;
+    }
+
+    .upload-dot {
+        background-color: transparent;
+        border-color: #000;
+    }
+
+    .tar-dot {
+        background-color: transparent;
+        border-color: #000;
+    }
+
+    .unzip-dot {
+        background-color: transparent;
+        border-color: #000;
+    }
+
+    .config-dot {
+        background-color: transparent;
+        border-color: #000;
+    }
+
+    .compare-dot {
+        background-color: transparent;
+        border-color: #000;
+    }
+
+    .upload-dot.active {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+
+    .tar-dot.active {
+        background-color: #0dcaf0;
+        border-color: #0dcaf0;
+    }
+
+    .unzip-dot.active {
+        background-color: #198754;
+        border-color: #198754;
+    }
+
+    .config-dot.active {
+        background-color: #20c997;
+        border-color: #20c997;
+    }
+
+    .compare-dot.active {
+        background-color: #6f42c1;
+        border-color: #6f42c1;
+    }
+
+    /* 文件上传区域样式 */
+    .file-upload-area {
+        border: 2px dashed #dee2e6;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        background-color: #f8f9fa;
+    }
+
+    .file-upload-area.dragover {
+        border-color: #0d6efd;
+        background-color: #e7f3ff;
+        transform: scale(1.02);
+    }
+
+    /* 日志区域样式 */
+    .log-area {
+        height: 300px;
+        overflow-y: auto;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 10px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9em;
+    }
+
+    .log-item {
+        margin-bottom: 5px;
+        padding: 2px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .log-item:last-child {
+        border-bottom: none;
+    }
+
+    .log-item.text-success {
+        color: #198754;
+    }
+
+    .log-item.text-error {
+        color: #dc3545;
+    }
+
+    .log-item.text-info {
+        color: #0dcaf0;
+    }
+
+    .log-item.text-warning {
+        color: #fd7e14;
+    }
+
+    /* 表格优化样式 */
+    .status-matrix-table {
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    .status-matrix-table th {
+        font-weight: 600;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .status-matrix-table td {
+        vertical-align: middle;
+        padding: 0.75rem 0.5rem;
+    }
+
+    /* 表格行交替颜色 */
+    .status-matrix-table tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    .status-matrix-table tbody tr:nth-child(odd) {
+        background-color: #ffffff;
+    }
+
+    .status-matrix-table tbody tr:hover {
+        background-color: #e9ecef;
+        transition: background-color 0.2s ease;
+    }
+
+    /* 下载按钮圆角样式 */
+    .download-btn {
+        border-radius: 20px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .download-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+        .status-dots {
+            margin-left: 0;
+            margin-top: 0.5rem;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .file-info-item {
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+    }
+    
+    /* 整合显示样式 */
+    .table-primary {
+        background-color: rgba(13, 110, 253, 0.1) !important;
+    }
+    
+    .table-secondary {
+        background-color: rgba(108, 117, 125, 0.1) !important;
+    }
+    
+    .table-info {
+        background-color: rgba(13, 202, 240, 0.1) !important;
+        border-left: 4px solid #0dcaf0;
+    }
+    
+    .table-warning {
+        background-color: rgba(255, 193, 7, 0.1) !important;
+    }
+    
+    .comparison-row {
+        border-top: 2px solid #dee2e6;
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    .device-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .similarity-high {
+        color: #198754;
+        font-weight: bold;
+    }
+    
+    .similarity-medium {
+        color: #fd7e14;
+        font-weight: bold;
+    }
+    
+    .similarity-low {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    
+    .separator-row {
+        height: 20px;
+        background-color: #f8f9fa;
+    }
+    
+    .unpaired-section {
+        border-top: 2px solid #ffc107;
+        margin-top: 1rem;
+        padding-top: 1rem;
+    }
+    
+    /* 新的布局样式 */
+    .comparison-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .comparison-info small {
+        font-size: 0.75rem;
+        line-height: 1.2;
+    }
+    
+    .action-buttons-column {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .action-buttons-column .btn {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .device-badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+    
+    /* 配置文件预览模态框样式 */
+    .config-preview-modal .modal-body {
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+    
+    .config-preview-modal pre {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        margin: 0;
+        font-family: 'Courier New', monospace;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    
+    /* 表格列样式优化 */
+    .comparison-table th {
+        text-align: center;
+        vertical-align: middle;
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+    }
+    
+    .comparison-table td {
+        vertical-align: middle;
+        padding: 1rem 0.5rem;
+    }
+    
+    .comparison-table .config-info {
+        text-align: left;
+    }
+    
+    .comparison-table .stats-info {
+        text-align: center;
+    }
+    
+    /* 差异统计样式 */
+    .difference-stats {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .difference-badge {
+        font-size: 1rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .difference-ratio {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    /* 配置文件信息样式 */
+    .config-file-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .config-file-info .file-name {
+        font-weight: 600;
+        color: #0d6efd;
+    }
+    
+    .config-file-info .file-details {
+        font-size: 0.75rem;
+        color: #6c757d;
+        line-height: 1.2;
+    }
+    
+    /* 序号样式 */
+    .sequence-number {
+        font-weight: 600;
+        color: #495057;
+        background-color: #e9ecef;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        font-size: 0.875rem;
+    }
+    
+    .sequence-number:hover {
+        background-color: #dee2e6;
+        transform: scale(1.1);
+        transition: all 0.2s ease;
+    }
+    
+    /* 对比统计样式 */
+    .comparison-stats {
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+        border: 1px solid #dee2e6;
+    }
+    
+    .stat-item {
+        padding: 0.5rem;
+        background-color: white;
+        border-radius: 0.25rem;
+        border: 1px solid #e9ecef;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.75rem;
+        color: #6c757d;
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+    }
+    
+    .stat-value {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    /* 配置文件信息样式优化 */
+    .config-file-info {
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+        border: 1px solid #dee2e6;
+    }
+    
+    .config-file-info .file-name {
+        font-weight: 600;
+        color: #0d6efd;
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .config-file-info .file-details {
+        font-size: 0.75rem;
+        color: #6c757d;
+        line-height: 1.3;
+        margin-bottom: 1rem;
+    }
+    
+    .config-file-info .file-details div {
+        margin-bottom: 0.25rem;
+    }
+    
+    /* 简化对比统计样式 */
+    .comparison-stats-simple {
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+        border: 1px solid #dee2e6;
+    }
+    
+    .file-stats {
+        padding: 0.5rem;
+        background-color: white;
+        border-radius: 0.25rem;
+        border: 1px solid #e9ecef;
+    }
+    
+    .stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.25rem;
+        font-size: 0.875rem;
+    }
+    
+    .stat-row:last-child {
+        margin-bottom: 0;
+    }
+    
+    .stat-row .stat-label {
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .stat-row .stat-value {
+        color: #495057;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+
+            
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <!-- 文件上传区域 -->
+                    <div class="card" style="height: 400px; overflow-y: auto;">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-exchange-alt me-2"></i>
+                                弘积主备配置对比结果
+                            </h5>
+                        </div>
+                        <div class="card-body" style="height: calc(320px - 60px);">
+                            <div class="file-upload-area" id="uploadArea"
+                                style="padding: 60px;height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+
+                                <i class="fas fa-cloud-upload-alt fa-2x text-primary mb-2"></i>
+                                <h6>拖拽文件到此处或点击选择文件</h6>
+                                <p class="text-muted small mb-2">支持文件格式：TAR、ZIP、GZ、BZ2等压缩文件，或无扩展名的弘积配置文件</p>
+                                <p class="text-muted small mb-2">文件数量限制：最多20个文件</p>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <input type="file" id="fileInput" multiple style="display: none;">
+                                        <button class="btn btn-primary btn-sm download-btn btn-full"
+                                            onclick="document.getElementById('fileInput').click()">
+                                            <i class="fas fa-file me-2"></i>点击上传文件
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+
+                        <div class="card-body">
+                            <div class="row mb-3 justify-content-center">
+                                <div class="col-3">
+                                    <button class="btn btn-primary download-btn btn-full" onclick="autoProcessFiles()">
+                                        <i class="fas fa-cogs me-2"></i>自动化处理
+                                    </button>
+                                </div>
+                                <div class="col-3">
+                                    <button class="btn btn-danger download-btn btn-full" onclick="deleteAllFiles()">
+                                        <i class="fas fa-trash me-2"></i>清空所有
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <!-- 状态和日志 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-terminal me-2"></i>处理日志
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="logArea" class="log-area">
+                                <div class="text-muted">等待操作...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+
+            <div class="row">
+                <div class="col-lg-0">
+                    <!-- 配置对比结果 -->
+                    <div class="card mt-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-list me-2"></i>
+                                配置对比结果
+                            </h5>
+                            <div class="action-buttons">
+                                <button class="btn btn-outline-primary btn-sm" onclick="processAllFiles()">
+                                    <i class="fas fa-cogs me-1"></i>
+                                    批量处理
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm" onclick="deleteAllFiles()">
+                                    <i class="fas fa-trash me-1"></i>
+                                    清空所有
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover file-table" id="fileTable">
+                                    
+                                    <tbody id="fileTableBody">
+                                        <!-- 配置对比结果将通过JavaScript动态加载 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="compareResults">
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-info-circle fa-2x mb-3"></i>
+                                    <p>正在加载配置对比结果...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let uploadedFiles = [];
+let processingFiles = new Set();
+
+// 页面加载时获取文件列表
+document.addEventListener('DOMContentLoaded', function() {
+    loadFiles();
+    updateStatusDots();
+    // 自动加载对比结果
+    loadCompareResults();
+    
+    // 初始化日志区域
+    const logArea = document.getElementById('logArea');
+    logArea.innerHTML = '<div class="text-muted">等待操作...</div>';
+});
+
+// 添加日志函数
+function addLog(message, type = 'info') {
+    const timestamp = new Date().toLocaleTimeString();
+    const logItem = document.createElement('div');
+    logItem.className = `log-item text-${type}`;
+    logItem.innerHTML = `
+        <small class="text-muted">[${timestamp}]</small>
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} me-1"></i>
+        ${message}
+    `;
+
+    // 如果是第一条日志，只清除初始的"等待操作..."提示
+    const logArea = document.getElementById('logArea');
+    const initialMessage = logArea.querySelector('.text-muted:not(.log-item small)');
+    if (initialMessage && initialMessage.textContent.includes('等待操作')) {
+        logArea.innerHTML = '';
+    }
+
+    logArea.appendChild(logItem);
+    logArea.scrollTop = logArea.scrollHeight;
+}
+
+// 文件上传处理
+document.getElementById('fileInput').addEventListener('change', function(e) {
+    const files = Array.from(e.target.files);
+    uploadFiles(files);
+});
+
+// 拖拽上传
+const uploadArea = document.getElementById('uploadArea');
+uploadArea.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    uploadArea.classList.add('dragover');
+});
+
+uploadArea.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+});
+
+uploadArea.addEventListener('drop', function(e) {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    const files = Array.from(e.dataTransfer.files);
+    uploadFiles(files);
+});
+
+function uploadFiles(files) {
+    addLog(`开始上传 ${files.length} 个文件...`, 'info');
+    
+    let uploadedCount = 0;
+    let errorCount = 0;
+    
+    files.forEach(file => {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        fetch('/upload/horizon', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            // 检查响应类型
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('text/html')) {
+                // 如果返回HTML，说明可能被重定向到登录页面
+                throw new Error('用户未登录或会话已过期，请重新登录');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                addLog(`文件 ${file.name} 上传成功`, 'success');
+                uploadedCount++;
+            } else {
+                addLog(`文件 ${file.name} 上传失败: ${data.error}`, 'error');
+                errorCount++;
+            }
+            
+            // 检查是否所有文件都处理完成
+            if (uploadedCount + errorCount === files.length) {
+                addLog(`文件上传完成：成功 ${uploadedCount} 个，失败 ${errorCount} 个`, uploadedCount > 0 ? 'success' : 'error');
+                loadFiles();
+                updateStatusDots();
+            }
+        })
+        .catch(error => {
+            addLog(`文件 ${file.name} 上传失败: ${error.message}`, 'error');
+            errorCount++;
+            
+            if (uploadedCount + errorCount === files.length) {
+                addLog(`文件上传完成：成功 ${uploadedCount} 个，失败 ${errorCount} 个`, uploadedCount > 0 ? 'success' : 'error');
+                loadFiles();
+                updateStatusDots();
+            }
+        });
+    });
+}
+
+// 自动化处理文件
+let isAutoProcessing = false; // 添加标志防止重复调用
+
+function autoProcessFiles() {
+    if (isAutoProcessing) {
+        addLog('自动化处理正在进行中，请稍候...', 'warning');
+        return;
+    }
+    
+    isAutoProcessing = true;
+    addLog('开始自动化处理流程...', 'info');
+    
+    const formData = new FormData();
+    formData.append('file_type', 'horizon');
+    
+    fetch('/process/auto_process', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        // 检查响应类型
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('text/html')) {
+            // 如果返回HTML，说明可能被重定向到登录页面
+            throw new Error('用户未登录或会话已过期，请重新登录');
+        }
+        return response.json();
+    })
+    .then(data => {
+        isAutoProcessing = false; // 重置标志
+        if (data.success) {
+            addLog('自动化处理流程完成', 'success');
+            if (data.results) {
+                data.results.forEach(result => {
+                    addLog(result, 'info');
+                });
+            }
+            setTimeout(() => {
+                loadFiles();
+                loadCompareResults();
+            }, 2000); // 增加延迟时间，确保处理完成
+        } else {
+            addLog(`自动化处理失败: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        isAutoProcessing = false; // 重置标志
+        addLog(`自动化处理失败: ${error.message}`, 'error');
+    });
+}
+
+// 自动加载对比结果
+let isLoadingCompareResults = false; // 添加标志防止重复调用
+
+function loadCompareResults() {
+    if (isLoadingCompareResults) {
+        return; // 如果正在加载，直接返回
+    }
+    
+    isLoadingCompareResults = true;
+    addLog('正在加载配置对比结果...', 'info');
+    
+    fetch('/horizon_compare_results')
+        .then(response => {
+            // 检查响应类型
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('text/html')) {
+                // 如果返回HTML，说明可能被重定向到登录页面
+                throw new Error('用户未登录或会话已过期，请重新登录');
+            }
+            return response.json();
+        })
+        .then(data => {
+            isLoadingCompareResults = false; // 重置标志
+            if (data.success) {
+                window.compareResults = data.results;  // 保存到全局变量
+                displayCompareResults(data.results);
+                addLog('配置对比结果加载完成', 'success');
+            } else {
+                addLog(`获取对比结果失败: ${data.error}`, 'error');
+            }
+        })
+        .catch(error => {
+            isLoadingCompareResults = false; // 重置标志
+            addLog(`获取对比结果失败: ${error.message}`, 'error');
+        });
+}
+
+function loadFiles() {
+    addLog('开始加载文件列表...', 'info');
+    fetch('/files/horizon')
+        .then(response => {
+            // 检查响应类型
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('text/html')) {
+                // 如果返回HTML，说明可能被重定向到登录页面
+                throw new Error('用户未登录或会话已过期，请重新登录');
+            }
+            return response.json();
+        })
+        .then(data => {
+            uploadedFiles = data.files || [];
+            window.vrrpGroups = data.vrrp_groups || {};
+            window.comparisonPairs = data.comparison_pairs || [];
+            updateStatusDots();
+            addLog(`文件列表加载成功，共 ${uploadedFiles.length} 个文件`, 'success');
+        })
+        .catch(error => {
+            console.error('加载文件列表失败:', error);
+            addLog(`加载文件列表失败: ${error.message}`, 'error');
+        });
+}
+
+function processFile(filename) {
+    if (processingFiles.has(filename)) return;
+    
+    processingFiles.add(filename);
+    addLog(`开始处理文件: ${filename}`, 'info');
+    
+    fetch('/process/horizon', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ filename: filename })
+    })
+    .then(response => {
+        // 检查响应类型
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('text/html')) {
+            // 如果返回HTML，说明可能被重定向到登录页面
+            throw new Error('用户未登录或会话已过期，请重新登录');
+        }
+        return response.json();
+    })
+    .then(data => {
+        processingFiles.delete(filename);
+        if (data.success) {
+            addLog(`文件 ${filename} 处理成功`, 'success');
+            loadFiles();
+            updateStatusDots();
+        } else {
+            addLog(`文件 ${filename} 处理失败: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        processingFiles.delete(filename);
+        addLog(`处理失败: ${error.message}`, 'error');
+    });
+}
+
+function processAllFiles() {
+    const files = uploadedFiles.filter(f => !processingFiles.has(f.name));
+    if (files.length === 0) {
+        addLog('没有可处理的文件', 'info');
+        return;
+    }
+    
+    addLog(`开始批量处理 ${files.length} 个文件...`, 'info');
+    files.forEach(file => processFile(file.name));
+}
+
+function deleteAllFiles() {
+    if (confirm('确定要删除所有文件吗？此操作不可恢复。')) {
+        addLog('开始删除所有文件...', 'info');
+        
+        fetch('/delete_all_files/horizon', {
+            method: 'POST'
+        })
+        .then(response => {
+            // 检查响应类型
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('text/html')) {
+                // 如果返回HTML，说明可能被重定向到登录页面
+                throw new Error('用户未登录或会话已过期，请重新登录');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                addLog('所有文件删除成功', 'success');
+                loadFiles();
+            } else {
+                addLog(`删除失败: ${data.error}`, 'error');
+            }
+        })
+        .catch(error => {
+            addLog(`删除失败: ${error.message}`, 'error');
+        });
+    }
+}
+
+function updateStatusDots() {
+    // 根据处理状态更新圆点显示
+    const dots = document.querySelectorAll('.dot');
+    
+    // 重置所有圆点状态
+    dots.forEach(dot => {
+        dot.classList.remove('active', 'completed', 'error');
+    });
+    
+    // 检查是否有文件正在处理或已完成
+    if (uploadedFiles.length > 0) {
+        const hasCompletedFiles = uploadedFiles.some(file => file.status === 'completed');
+        const hasProcessingFiles = uploadedFiles.some(file => file.status === 'processing');
+        const hasErrorFiles = uploadedFiles.some(file => file.status === 'error');
+        
+        if (hasCompletedFiles) {
+            // 如果有完成的文件，激活所有步骤
+            dots.forEach(dot => {
+                dot.classList.add('completed');
+            });
+        } else if (hasProcessingFiles) {
+            // 如果有正在处理的文件，激活前几个步骤
+            const processingSteps = ['upload', 'tar', 'unzip', 'config'];
+            dots.forEach(dot => {
+                const step = dot.dataset.step;
+                if (processingSteps.includes(step)) {
+                    dot.classList.add('active');
+                }
+            });
+        } else if (hasErrorFiles) {
+            // 如果有错误的文件，显示错误状态
+            dots.forEach(dot => {
+                dot.classList.add('error');
+            });
+        } else {
+            // 如果只有待处理的文件，只激活上传步骤
+            dots.forEach(dot => {
+                const step = dot.dataset.step;
+                if (step === 'upload') {
+                    dot.classList.add('active');
+                }
+            });
+        }
+    }
+}
+
+function getStatusText(status) {
+    const statusMap = {
+        'pending': '待处理',
+        'processing': '处理中',
+        'completed': '已完成',
+        'error': '处理失败'
+    };
+    return statusMap[status] || '待处理';
+}
+
+function displayCompareResults(results) {
+    const container = document.getElementById('compareResults');
+    
+    if (!results || results.error) {
+        container.innerHTML = `
+            <div class="text-center text-muted">
+                <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                <p>${results?.error || '暂无对比结果'}</p>
+            </div>
+        `;
+        return;
+    }
+    
+    if (results.pairs.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted">
+                <i class="fas fa-info-circle fa-2x mb-3"></i>
+                <p>没有找到可对比的配置文件对</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // 创建对比结果表格
+    let html = `
+        <div class="mb-3">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body text-center">
+                            <h4>${results.summary.total_pairs}</h4>
+                            <small>对比文件对</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body text-center">
+                            <h4>${results.summary.total_differences}</h4>
+                            <small>总差异行数</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-striped comparison-table">
+                <thead>
+                    <tr>
+                        <th class="stats-info" style="width: 60px;">序号</th>
+                        <th class="config-info">配置文件1</th>
+                        <th class="stats-info">差异情况</th>
+                        <th class="config-info">配置文件2</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    results.pairs.forEach((pair, index) => {
+        const similarityClass = pair.stats.similarity >= 90 ? 'text-success' : 
+                              pair.stats.similarity >= 70 ? 'text-warning' : 'text-danger';
+        
+        html += `
+            <tr>
+                <td class="stats-info text-center">
+                    <div class="sequence-number">${index + 1}</div>
+                </td>
+                <td class="config-info">
+                    <div class="config-file-info">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-file-code me-2 text-primary"></i>
+                            <div>
+                                <div class="file-name">${pair.file1.name}</div>
+                                <div class="file-details">
+                                    <div>Hostname: ${pair.file1.hostname}</div>
+                                    <div>VRRP Unit-ID: ${pair.file1.vrrp_unit_id}</div>
+                                    <div>Management IP: ${pair.file1.mgmt_ip || 'N/A'}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-outline-primary" onclick="previewConfigFile('${pair.file1.name}', 1, 'config')">
+                                <i class="fas fa-eye me-1"></i>
+                                预览配置
+                            </button>
+                        </div>
+                    </div>
+                </td>
+                <td class="stats-info">
+                    <div class="comparison-stats-simple">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="file-stats">
+                                    <div class="stat-row">
+                                        <span class="stat-label">总行数:</span>
+                                        <span class="stat-value">${pair.stats.total_lines}</span>
+                                    </div>
+                                    <div class="stat-row">
+                                        <span class="stat-label">文件大小:</span>
+                                        <span class="stat-value">${(pair.file1.config_size || 0).toFixed(1)} KB</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="file-stats">
+                                    <div class="stat-row">
+                                        <span class="stat-label">总行数:</span>
+                                        <span class="stat-value">${pair.stats.total_lines}</span>
+                                    </div>
+                                    <div class="stat-row">
+                                        <span class="stat-label">文件大小:</span>
+                                        <span class="stat-value">${(pair.file2.config_size || 0).toFixed(1)} KB</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center mt-3">
+                            <div class="mb-2">
+                                <span class="badge bg-${pair.stats.different_lines > 0 ? 'danger' : 'success'} difference-badge">
+                                    ${pair.stats.different_lines} 行差异
+                                </span>
+                            </div>
+                            <div class="difference-ratio mb-2">
+                                差异比例: ${((pair.stats.different_lines / pair.stats.total_lines) * 100).toFixed(1)}%
+                            </div>
+                            <button class="btn btn-sm btn-outline-info" onclick="showDetailedDifferences(${index})">
+                                <i class="fas fa-code-branch me-1"></i>
+                                预览差异
+                            </button>
+                        </div>
+                    </div>
+                </td>
+                <td class="config-info">
+                    <div class="config-file-info">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-file-code me-2 text-primary"></i>
+                            <div>
+                                <div class="file-name">${pair.file2.name}</div>
+                                <div class="file-details">
+                                    <div>Hostname: ${pair.file2.hostname}</div>
+                                    <div>VRRP Unit-ID: ${pair.file2.vrrp_unit_id}</div>
+                                    <div>Management IP: ${pair.file2.mgmt_ip || 'N/A'}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-outline-primary" onclick="previewConfigFile('${pair.file2.name}', 2, 'config')">
+                                <i class="fas fa-eye me-1"></i>
+                                预览配置
+                            </button>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+    
+    // 保存对比结果到全局变量，供查看差异使用
+    window.compareResults = results;
+}
+
+function previewConfigFile(filename, fileNumber, fileType = 'config') {
+    addLog(`正在加载${fileType === 'config' ? '配置' : ''}文件预览: ${filename}`, 'info');
+    
+    const endpoint = fileType === 'config' ? `/preview_config/${filename}` : `/preview_file/${filename}`;
+    
+    fetch(endpoint)
+        .then(response => {
+            // 检查响应类型
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('text/html')) {
+                // 如果返回HTML，说明可能被重定向到登录页面
+                throw new Error('用户未登录或会话已过期，请重新登录');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showConfigPreviewModal(filename, data.content, fileNumber, fileType);
+                addLog(`${fileType === 'config' ? '配置' : ''}文件 ${filename} 预览加载成功`, 'success');
+            } else {
+                addLog(`${fileType === 'config' ? '配置' : ''}文件 ${filename} 预览加载失败: ${data.error}`, 'error');
+            }
+        })
+        .catch(error => {
+            addLog(`${fileType === 'config' ? '配置' : ''}文件 ${filename} 预览加载失败: ${error.message}`, 'error');
+        });
+}
+
+function showConfigPreviewModal(filename, content, fileNumber, fileType = 'config') {
+    const modalId = `configPreviewModal${fileNumber}`;
+    const fileTypeText = fileType === 'config' ? '配置' : '';
+    const downloadText = fileType === 'config' ? '下载配置文件' : '下载文件';
+    
+    let modalHtml = `
+        <div class="modal fade config-preview-modal" id="${modalId}" tabindex="-1">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-file-code me-2"></i>
+                            ${fileTypeText}文件预览 - ${filename}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-12">
+                                <pre>${content}</pre>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                        <button type="button" class="btn btn-primary" onclick="downloadConfigFile('${filename}', '${fileType}')">
+                            <i class="fas fa-download me-1"></i>
+                            ${downloadText}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 移除已存在的模态框
+    const existingModal = document.getElementById(modalId);
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // 添加新的模态框
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // 显示模态框
+    const modal = new bootstrap.Modal(document.getElementById(modalId));
+    modal.show();
+}
+
+function downloadConfigFile(filename, fileType = 'config') {
+    const endpoint = fileType === 'config' ? `/download_config/${filename}` : `/download_file/${filename}`;
+    const fileTypeText = fileType === 'config' ? '配置' : '';
+    
+    const link = document.createElement('a');
+    link.href = endpoint;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    addLog(`开始下载${fileTypeText}文件: ${filename}`, 'success');
+}
+
+function previewBothConfigs(filename1, filename2) {
+    addLog(`正在加载两个配置文件预览: ${filename1} 和 ${filename2}`, 'info');
+    
+    // 同时获取两个配置文件的内容
+    Promise.all([
+        fetch(`/preview_config/${filename1}`).then(response => {
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('text/html')) {
+                throw new Error('用户未登录或会话已过期，请重新登录');
+            }
+            return response.json();
+        }),
+        fetch(`/preview_config/${filename2}`).then(response => {
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('text/html')) {
+                throw new Error('用户未登录或会话已过期，请重新登录');
+            }
+            return response.json();
+        })
+    ])
+    .then(([data1, data2]) => {
+        if (data1.success && data2.success) {
+            showBothConfigsModal(filename1, filename2, data1.content, data2.content);
+            addLog(`两个配置文件预览加载成功`, 'success');
+        } else {
+            const error = data1.success ? data2.error : data1.error;
+            addLog(`配置文件预览加载失败: ${error}`, 'error');
+        }
+    })
+    .catch(error => {
+        addLog(`配置文件预览加载失败: ${error.message}`, 'error');
+    });
+}
+
+function showBothConfigsModal(filename1, filename2, content1, content2) {
+    const modalId = 'bothConfigsModal';
+    
+    let modalHtml = `
+        <div class="modal fade" id="${modalId}" tabindex="-1">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-file-code me-2"></i>
+                            两个配置文件对比预览
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-primary">${filename1}</h6>
+                                <pre class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto; font-size: 0.9em; line-height: 1.4;">${content1}</pre>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-primary">${filename2}</h6>
+                                <pre class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto; font-size: 0.9em; line-height: 1.4;">${content2}</pre>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                        <button type="button" class="btn btn-primary" onclick="downloadConfigFile('${filename1}', 'config')">
+                            <i class="fas fa-download me-1"></i>
+                            下载 ${filename1}
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="downloadConfigFile('${filename2}', 'config')">
+                            <i class="fas fa-download me-1"></i>
+                            下载 ${filename2}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 移除已存在的模态框
+    const existingModal = document.getElementById(modalId);
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // 添加新的模态框
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // 显示模态框
+    const modal = new bootstrap.Modal(document.getElementById(modalId));
+    modal.show();
+}
+
+function showDetailedDifferences(pairIndex) {
+    // 从对比结果中获取数据
+    const results = window.compareResults;
+    if (!results || !results.pairs || !results.pairs[pairIndex]) return;
+    
+    const pair = results.pairs[pairIndex];
+    
+    let differencesHtml = `
+        <div class="modal fade" id="detailedDifferencesModal" tabindex="-1">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-code-branch me-2"></i>
+                            ${pair.file1.hostname} vs ${pair.file2.hostname} 配置对比详细差异
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-2">
+                                <div class="card h-100">
+                                    <div class="card-body p-2">
+                                        <div><strong>${pair.file1.name}</strong></div>
+                                        <div class="small text-muted">VRRP Unit-ID: ${pair.file1.vrrp_unit_id}</div>
+                                        <div class="small text-muted">Hostname: ${pair.file1.hostname}</div>
+                                        <div class="small text-muted">Management IP: ${pair.file1.mgmt_ip || 'N/A'}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <div class="card h-100">
+                                    <div class="card-body p-2">
+                                        <div><strong>${pair.file2.name}</strong></div>
+                                        <div class="small text-muted">VRRP Unit-ID: ${pair.file2.vrrp_unit_id}</div>
+                                        <div class="small text-muted">Hostname: ${pair.file2.hostname}</div>
+                                        <div class="small text-muted">Management IP: ${pair.file2.mgmt_ip || 'N/A'}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 p-0">
+                                <table class="table table-sm mb-0" style="width:100%;">
+                                    <thead>
+                                        <tr>
+                                            <th width="80">行号</th>
+                                            <th width="45%">${pair.file1.name}</th>
+                                            <th width="45%">${pair.file2.name}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+`;
+    pair.differences.forEach(diff => {
+        const isDifferent = diff.file1 !== diff.file2;
+        const diffClass1 = isDifferent ? 'table-danger' : '';
+        const diffClass2 = isDifferent ? 'table-danger' : '';
+        differencesHtml += `
+            <tr>
+                <td class="text-muted">${diff.line}</td>
+                <td class="${diffClass1}">
+                    <span>${diff.file1 || ''}</span>
+                </td>
+                <td class="${diffClass2}">
+                    <span>${diff.file2 || ''}</span>
+                </td>
+            </tr>
+        `;
+    });
+    differencesHtml += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                        <button type="button" class="btn btn-primary" onclick="previewBothConfigs('${pair.file1.name}', '${pair.file2.name}')">
+                            <i class="fas fa-eye me-1"></i>
+                            预览两个配置文件
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 移除已存在的模态框
+    const existingModal = document.getElementById('detailedDifferencesModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // 添加新的模态框
+    document.body.insertAdjacentHTML('beforeend', differencesHtml);
+    
+    // 显示模态框
+    const modal = new bootstrap.Modal(document.getElementById('detailedDifferencesModal'));
+    modal.show();
+}
+
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.container-fluid');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+</script>
+{% endblock %}
